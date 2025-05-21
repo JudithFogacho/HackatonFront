@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MiniKit } from '@worldcoin/minikit-js';
 
 interface WorldIDAuthProps {
   onSuccess?: () => void;
@@ -11,89 +11,80 @@ interface WorldIDAuthProps {
 export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
 
-  // Function to handle World ID authentication through Mini App
-  const handleWorldIDAuth = () => {
+  // Función principal de autenticación
+  const handleWorldIDAuth = async () => {
     setIsLoading(true);
     setError(null);
-    
-    try {
-      // App parameters
-      const appId = 'app_805d8030cf7f6ba31af4010e5fd9a143'; // Your World ID App ID
-      const action = 'doup-user-verification'; // Must match exactly what's in the Developer Portal
-      
-      // Construct properly encoded redirect URL - this is critical
-      const redirectUrl = encodeURIComponent(`${window.location.origin}/auth/callback`);
-      
-      // Construct the Mini App URL according to specs
-      const miniAppUrl = `https://worldcoin.org/mini-app?app_id=${appId}&action=${action}&redirect_url=${redirectUrl}`;
-      
-      console.log('Opening World ID Mini App:', miniAppUrl);
-      
-      // Open the Mini App in the current window
-      window.location.href = miniAppUrl;
-    } catch (err: any) {
-      console.error('Error launching Mini App:', err);
-      setError('Failed to launch World ID verification');
-      setIsLoading(false);
-    }
-  };
 
-  // Alternative login for development/testing
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
-      const nickname = 'Demo_User_' + Math.random().toString(36).substring(2, 8);
-      console.log('Starting demo login for:', nickname);
+      // Generar un UUID para el nonce
+      const nonce = crypto.randomUUID().replace(/-/g, '');
       
-      const response = await fetch(`${apiUrl}/api/auth/demo-login`, {
+      // Usar el comando walletAuth de MiniKit
+      const result = await MiniKit.commandsAsync.walletAuth({
+        nonce,
+        expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        notBefore: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        statement: `Authenticate (${crypto.randomUUID().replace(/-/g, '')}).`,
+      });
+
+      // Verificar el resultado
+      if (result.finalPayload.status !== 'success') {
+        throw new Error(result.finalPayload.error_code || 'Authentication failed');
+      }
+
+      console.log('Authentication successful:', result.finalPayload);
+
+      // Enviar los datos al backend para verificación
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ nickname })
+        body: JSON.stringify({
+          walletAddress: MiniKit.user.walletAddress,
+          nickname: MiniKit.user.username,
+          profilePictureUrl: MiniKit.user.profilePictureUrl
+        })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Authentication error');
+        throw new Error(errorData.error || 'Server authentication failed');
       }
 
       const authData = await response.json();
       console.log('Login successful:', authData);
       
-      login(authData.token, authData.user);
+      // Almacenar el token en localStorage
+      localStorage.setItem('token', authData.token);
+      localStorage.setItem('user', JSON.stringify(authData.user));
       
-      // Navigate after login
-      setTimeout(() => {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push('/jobs/categories');
-        }
-      }, 100);
+      // Redirección o callback
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/jobs/categories');
+      }
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Authentication error. Please try again.');
+      console.error('Authentication error:', err);
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center">
       {error && (
         <div className="mb-4 text-red-500 text-sm text-center">
           {error}
         </div>
       )}
       
-      {/* World ID Auth Button */}
       <button
         onClick={handleWorldIDAuth}
         disabled={isLoading}
@@ -111,17 +102,6 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
           'SIGN IN WITH WORLD ID'
         )}
       </button>
-      
-      {/* Demo Login (for development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          onClick={handleDemoLogin}
-          disabled={isLoading}
-          className="w-full bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center text-sm"
-        >
-          Development: Demo Login
-        </button>
-      )}
     </div>
   );
 }

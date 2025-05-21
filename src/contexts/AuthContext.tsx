@@ -1,7 +1,9 @@
+// src/contexts/AuthContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { MiniKit } from '@worldcoin/minikit-js';
 
 // Definir el tipo para el usuario
 type User = {
@@ -9,13 +11,6 @@ type User = {
   nickname?: string;
   walletAddress?: string;
   profilePicture?: string;
-  professionalInfo?: {
-    hourlyRate: number;
-  };
-  statistics?: {
-    linksGenerated: number;
-    rating: number;
-  };
 };
 
 // Definir el tipo para el contexto
@@ -50,8 +45,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const storedUser = localStorage.getItem('user');
 
           if (storedToken && storedUser) {
+            console.log('Loading stored session:', storedToken.substring(0, 10));
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
+            
+            // Asegurarse de que MiniKit tenga la info correcta
+            if (MiniKit.isInstalled()) {
+              console.log('MiniKit is installed, session loaded from storage');
+            }
+          } else {
+            console.log('No stored session found');
           }
         }
       } catch (error) {
@@ -72,36 +75,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Función para iniciar sesión
- // En src/contexts/AuthContext.tsx, busca la función login y asegúrate de que sea así:
-
-const login = (newToken: string, newUser: User) => {
-  console.log('Setting auth state:', { token: newToken, user: newUser });
-  
-  // Actualizar estado inmediatamente
-  setToken(newToken);
-  setUser(newUser);
-  
-  // Guardar en localStorage
-  if (typeof window !== 'undefined') {
-    try {
+  const login = (newToken: string, newUser: User) => {
+    console.log('Setting auth state:', { token: newToken.substring(0, 10), user: newUser });
+    
+    setToken(newToken);
+    setUser(newUser);
+    
+    // Guardar en localStorage
+    if (typeof window !== 'undefined') {
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
-      console.log('Auth data saved to localStorage');
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      
+      // También lo guardamos como cookie para el middleware
+      document.cookie = `token=${newToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
     }
-  }
-};
+  };
 
   // Función para cerrar sesión
   const logout = () => {
     setToken(null);
     setUser(null);
     
-    // Limpiar localStorage
+    // Limpiar localStorage y cookies
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
     }
     
     // Redirigir al inicio
