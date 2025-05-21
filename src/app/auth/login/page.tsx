@@ -1,90 +1,31 @@
-// src/components/auth/WorldIDAuth.tsx
+// src/app/auth/login/page.tsx
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import WorldIDAuth from '@/components/auth/WorldIDAuth';
 
-// Add props interface
-interface WorldIDAuthProps {
-  onSuccess?: () => void;
-}
-
-export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export default function LoginPage() {
   const router = useRouter();
 
-  const handleAuth = async () => {
-    setIsLoading(true);
-    
-    try {
-      console.log('Authentication process started');
-      
-      // Generate a realistic-looking token (for simulation)
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 
-                    btoa(JSON.stringify({userId: Date.now(), exp: Date.now() + 86400000})) + 
-                    '.simulated';
-      
-      // Simulate a user
-      const user = {
-        id: 'user-' + Date.now(),
-        username: 'WorldIDUser',
-        walletAddress: '0x' + Math.random().toString(36).substring(2, 14),
-        profilePictureUrl: null
-      };
-      
-      // Store user info in localStorage for client-side access
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      // Important: Server-side cookie setting via API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, user }),
-        credentials: 'include', // Important for cookies
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to authenticate');
-      }
-      
-      console.log('Authentication successful, redirecting to categories page');
-      
-      // Call the onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        // Otherwise do the default redirect
-        window.location.href = '/jobs/categories';
-      }
-    } catch (error) {
-      console.error('Authentication error:', error);
-      alert('Authentication failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center">
-      <button
-        onClick={handleAuth}
-        disabled={isLoading}
-        className="w-full bg-white text-primary font-medium py-3 px-4 rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-      >
-        {isLoading ? (
-          <div className="flex items-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Connecting...
-          </div>
-        ) : (
-          'SIGN IN WITH WORLD ID'
-        )}
-      </button>
+    <div className="flex flex-col items-center justify-center flex-1 bg-[#004B62] px-4 py-12">
+      {/* Logo */}
+      <div className="mb-16 text-center">
+        <h1 className="text-yellow-400 text-8xl font-bold leading-tight">
+          <span className="block">Do</span>
+          <span className="block -mt-12">Up</span>
+        </h1>
+      </div>
+      
+      {/* Iniciar Sesión heading */}
+      <h2 className="text-white text-4xl font-semibold mb-12">
+        Iniciar Sesión
+      </h2>
+      
+      {/* World ID button container */}
+      <div className="w-full max-w-xs">
+        <WorldIDAuth onSuccess={() => router.push('/jobs/categories')} />
+      </div>
     </div>
   );
 }
