@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/common/Header';
@@ -9,7 +9,8 @@ import PaymentModal from '@/components/payment/PaymentModal';
 import { Job } from '@/types';
 import { motion } from 'framer-motion';
 
-export default function NewChatPage() {
+// Componente que usa useSearchParams envuelto en Suspense
+function NewChatContent() {
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,5 +213,14 @@ export default function NewChatPage() {
         />
       )}
     </div>
+  );
+}
+
+// Componente principal que envuelve el contenido en Suspense
+export default function NewChatPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div></div>}>
+      <NewChatContent />
+    </Suspense>
   );
 }

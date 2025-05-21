@@ -1,21 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/common/Header';
 import BottomNavigation from '@/components/common/BottomNavigation';
 import { Chat, ChatMessage } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface ChatPageProps {
-  params: {
-    id: string;
-  }
-}
-
-export default function ChatPage({ params }: ChatPageProps) {
-  const { id } = params;
+export default function ChatPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [chat, setChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);

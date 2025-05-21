@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/common/Header';
 import BottomNavigation from '@/components/common/BottomNavigation';
@@ -9,17 +9,9 @@ import { Job, JobType } from '@/types';
 import { motion } from 'framer-motion';
 import PaymentModal from '@/components/payment/PaymentModal';
 
-// Importaremos luego el modal de pago cuando lo creemos
-// import PaymentModal from '@/components/payment/PaymentModal';
-
-interface JobDetailPageProps {
-  params: {
-    id: string;
-  }
-}
-
-export default function JobDetailPage({ params }: JobDetailPageProps) {
-  const { id } = params;
+export default function JobDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

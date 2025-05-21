@@ -10,14 +10,20 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+// Definir configuración de viewport para el navegador
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#004B62',
+};
+
 // Definir metadatos para SEO y navegador
 export const metadata: Metadata = {
   title: 'Do Up | Conecta con oportunidades',
   description: 'Encuentra trabajos y profesionales en una plataforma verificada con World ID',
   keywords: 'trabajos, profesionales, freelance, World ID, blockchain',
   authors: [{ name: 'Do Up Team' }],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  themeColor: '#004B62',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',

@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import WorldIDAuth from '@/components/auth/WorldIDAuth';
 
-export default function LoginPage() {
+// Componente que usa useSearchParams envuelto en Suspense
+function LoginContent() {
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/jobs/categories';
-
+  
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUsername(e.target.value);
   };
@@ -102,5 +103,14 @@ export default function LoginPage() {
         </motion.p>
       </motion.div>
     </div>
+  );
+}
+
+// Componente principal que envuelve el contenido en Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

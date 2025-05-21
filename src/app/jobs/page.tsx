@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Header from '@/components/common/Header';
@@ -9,7 +9,8 @@ import JobSwiper from '@/components/jobs/JobSwiper';
 import { Job, JobType } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function JobsPage() {
+// Componente que usa useSearchParams envuelto en Suspense
+function JobsContent() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -215,4 +216,13 @@ function getSampleJobs(): Job[] {
       active: true
     }
   ];
+}
+
+// Componente principal que envuelve el contenido en Suspense
+export default function JobsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div></div>}>
+      <JobsContent />
+    </Suspense>
+  );
 }
