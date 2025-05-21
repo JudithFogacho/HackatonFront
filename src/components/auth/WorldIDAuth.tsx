@@ -103,8 +103,8 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
       
       // Iniciar la verificación con World ID
       const verificationResponse = await window.WorldID.verify({
-        signal: nonce, // Usar el nonce como signal
-        action: action, // IMPORTANTE: Usar el mismo action que en init
+        signal: nonce, // Asegúrate de que esto sea el nonce obtenido del servidor
+        action: "doup-user-verification", // Debe coincidir exactamente con el identificador en el portal
         enable_telemetry: false
       });
       
@@ -125,8 +125,8 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
           nullifier_hash: verificationResponse.nullifier_hash,
           proof: verificationResponse.proof,
           credential_type: verificationResponse.credential_type,
-          action: action, // Usar el mismo action en todos lados
-          signal: nonce // Incluir el nonce como signal
+          action: "doup-user-verification", // Usar el mismo action
+          signal: nonce // Asegúrate de que esto sea el mismo nonce
         })
       });
 
