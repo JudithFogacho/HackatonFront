@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { motion } from 'framer-motion';
 
 // Definición de la interfaz para las props
 interface WorldIDAuthProps {
@@ -33,6 +34,7 @@ declare global {
 
 export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassport, setShowPassport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
@@ -81,28 +83,27 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
     setError(null);
     
     try {
-      // Primero intentamos verificar si WorldID está disponible
-      if (!window.WorldID) {
-        console.log('WorldID no disponible, usando método alternativo');
-        handleAlternativeAuth();
-        return;
-      }
+      // Primero mostrar la animación del pasaporte
+      setShowPassport(true);
       
-      // Si WorldID está disponible, usamos Mini App
-      // Construir la URL de la Mini App con los parámetros necesarios
-      const miniAppUrl = `https://worldcoin.org/mini-app?app_id=app_805d8030cf7f6ba31af4010e5fd9a143&action=doup-user-verification&redirect_url=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
-      
-      console.log('Redirigiendo a Mini App:', miniAppUrl);
-      
-      // Redireccionar al usuario a la Mini App
-      window.location.href = miniAppUrl;
-      
-      // No necesitas el resto del código, ya que el manejo de la autenticación
-      // se realizará cuando World ID redireccione de vuelta a tu app
+      // Simular un pequeño retraso antes de iniciar la autenticación real
+      setTimeout(() => {
+        // Si WorldID está disponible, usamos Mini App
+        if (window.WorldID) {
+          const miniAppUrl = `https://worldcoin.org/mini-app?app_id=app_805d8030cf7f6ba31af4010e5fd9a143&action=doup-user-verification&redirect_url=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
+          console.log('Redirigiendo a Mini App:', miniAppUrl);
+          window.location.href = miniAppUrl;
+        } else {
+          // Si WorldID no está disponible, usar método alternativo
+          console.log('WorldID no disponible, usando método alternativo');
+          handleAlternativeAuth();
+        }
+      }, 1500); // Esperar 1.5 segundos para mostrar la animación
     } catch (err: any) {
       console.error('Error al iniciar autenticación:', err);
       setError('Error al iniciar la autenticación con World ID');
       setIsLoading(false);
+      setShowPassport(false);
     }
   };
 
@@ -111,8 +112,6 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
     console.warn('La API de World ID no está disponible, usando método alternativo');
     
     try {
-      setIsLoading(true);
-      
       // Hacer una solicitud al endpoint de autenticación alternativo simplificado
       const response = await fetch(`${apiUrl}/api/auth/demo-login`, {
         method: 'POST',
@@ -130,21 +129,78 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
       }
 
       const authData = await response.json();
+      console.log('Autenticación exitosa, datos:', authData);
       
       // Guardar información de autenticación
       login(authData.token, authData.user);
       
-      // Llamar al callback de éxito si existe
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Simular un pequeño retraso antes de redireccionar
+      setTimeout(() => {
+        setShowPassport(false);
+        setIsLoading(false);
+        
+        console.log('Intentando redireccionar, onSuccess existe:', !!onSuccess);
+        // Llamar al callback de éxito si existe
+        if (onSuccess) {
+          console.log('Llamando a onSuccess para redireccionar');
+          onSuccess();
+        } else {
+          console.log('No hay función onSuccess definida, redireccionando manualmente');
+          // Redirección alternativa si no hay onSuccess
+          window.location.href = '/jobs/categories';
+        }
+      }, 1000);
     } catch (err: any) {
       console.error('Error durante la autenticación alternativa:', err);
       setError(err.message || 'Error al autenticar. Inténtalo de nuevo.');
-    } finally {
       setIsLoading(false);
+      setShowPassport(false);
     }
   };
+
+  // Overlay de verificación con pasaporte
+  const PassportOverlay = () => (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+      onClick={() => {}} // Evitar que clicks accidentales cierren el overlay
+    >
+      <div className="bg-white rounded-lg p-8 max-w-sm w-full text-center">
+        <div className="relative mx-auto mb-6 w-32">
+          <motion.div
+            initial={{ rotateY: 0 }}
+            animate={{ rotateY: 360 }}
+            transition={{ duration: 2, repeat: Infinity, repeatType: "loop", ease: "easeInOut" }}
+            className="w-full"
+          >
+            <img 
+              src="https://uploads-ssl.webflow.com/646064abf2ae787ad9c35019/64cfe35971f7954f30e73c15_Security-Passport.png" 
+              alt="World ID Passport" 
+              className="w-full h-auto"
+            />
+          </motion.div>
+        </div>
+        <h2 className="text-xl font-bold mb-2 text-gray-800">Verificando identidad</h2>
+        <p className="text-gray-600 mb-4">Por favor espera mientras verificamos tu identidad con World ID...</p>
+        <div className="flex justify-center">
+          <motion.div 
+            className="w-12 h-1 bg-blue-500 rounded-full"
+            animate={{ 
+              width: ["25%", "90%", "25%"],
+              backgroundColor: ["#3B82F6", "#10B981", "#3B82F6"]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "loop"
+            }}
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="flex flex-col items-center">
@@ -171,6 +227,9 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
           'INICIAR CON WORLD ID'
         )}
       </button>
+      
+      {/* Overlay de verificación con animación de pasaporte */}
+      {showPassport && <PassportOverlay />}
     </div>
   );
 }
