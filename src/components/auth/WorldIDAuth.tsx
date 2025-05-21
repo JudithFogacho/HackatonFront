@@ -97,40 +97,54 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   };
 
   // Método alternativo si WorldID JS no está disponible
-  const handleAlternativeAuth = async () => {
-    console.warn('La API de World ID no está disponible, usando método alternativo');
+  // Método alternativo si WorldID JS no está disponible
+const handleAlternativeAuth = async () => {
+  console.warn('La API de World ID no está disponible, usando método alternativo');
+  
+  try {
+    // Primero, obtener un nonce del servidor
+    const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`);
     
-    try {
-      // Hacer una solicitud al endpoint de autenticación alternativo
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          nickname: 'User_' + Math.random().toString(36).substring(2, 8)
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error en la autenticación alternativa');
-      }
-
-      const authData = await response.json();
-      
-      // Guardar información de autenticación
-      login(authData.token, authData.user);
-      
-      // Llamar al callback de éxito si existe
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (err: any) {
-      console.error('Error durante la autenticación alternativa:', err);
-      setError(err.message || 'Error al autenticar. Inténtalo de nuevo.');
+    if (!nonceResponse.ok) {
+      throw new Error('Error al obtener nonce para la autenticación alternativa');
     }
-  };
+    
+    const { nonce } = await nonceResponse.json();
+    console.log('Nonce obtenido para auth alternativa:', nonce);
+    
+    // Hacer una solicitud al endpoint de autenticación alternativo con el nonce
+    const response = await fetch(`${apiUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nonce, // Incluir el nonce obtenido
+        nickname: 'User_' + Math.random().toString(36).substring(2, 8)
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error en la autenticación alternativa');
+    }
+
+    const authData = await response.json();
+    
+    // Guardar información de autenticación
+    login(authData.token, authData.user);
+    
+    // Llamar al callback de éxito si existe
+    if (onSuccess) {
+      onSuccess();
+    }
+  } catch (err: any) {
+    console.error('Error durante la autenticación alternativa:', err);
+    setError(err.message || 'Error al autenticar. Inténtalo de nuevo.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col items-center">
