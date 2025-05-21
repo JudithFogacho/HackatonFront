@@ -1,153 +1,90 @@
-// /src/app/auth/callback/page.tsx
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
-// Callback content component
-function CallbackContent() {
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { login } = useAuth();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
-  
-  useEffect(() => {
-    const verifyCredential = async () => {
-      try {
-        console.log('Callback received with parameters:', 
-                   Object.fromEntries(searchParams.entries()));
-        
-        // Extract verification parameters
-        const proof = searchParams.get('proof');
-        const nullifier_hash = searchParams.get('nullifier_hash');
-        const merkle_root = searchParams.get('merkle_root');
-        const credential_type = searchParams.get('credential_type') || 'orb';
-        // Get redirect URL from search params or default to categories
-        const redirectTo = searchParams.get('redirect') || '/jobs/categories';
-        
-        if (!proof || !nullifier_hash || !merkle_root) {
-          throw new Error('Incomplete verification parameters');
-        }
-        
-        console.log('Sending verification to backend...');
-        
-        // Send verification to backend
-        const response = await fetch(`${apiUrl}/api/auth/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            proof,
-            nullifier_hash,
-            merkle_root,
-            credential_type,
-            action: 'doup-user-verification'
-          })
-        });
-        
-        console.log('Backend response received:', response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Backend error:', errorData);
-          throw new Error(errorData.error || 'Verification error');
-        }
-        
-        const data = await response.json();
-        console.log('Successful verification, data received:', data);
-        
-        // Login success
-        login(data.token, data.user);
-        
-        // Redirect to the specified page or categories
-        router.push(redirectTo);
-      } catch (err: any) {
-        console.error('Credential verification error:', err);
-        setError(err.message || 'Authentication error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Verify credentials if proof is present
-    if (searchParams.has('proof')) {
-      verifyCredential();
-    } else {
-      console.error('No verification credentials received');
-      setError('No verification credentials received');
-      setLoading(false);
-    }
-  }, [searchParams, router, login, apiUrl]);
-  
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-primary mb-2">Verifying identity</h2>
-            <p className="text-gray-600">Please wait while we verify your identity with World ID...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-          <div className="text-center">
-            <div className="bg-red-100 p-3 rounded-full inline-block mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-primary mb-2">Verification Error</h2>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button 
-              onClick={() => router.push('/auth/login')}
-              className="bg-primary text-white font-medium py-2 px-4 rounded-lg"
-            >
-              Return to login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Brief transitional state
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light">
-      <div className="text-center">
-        <p className="text-primary">Redirecting...</p>
-      </div>
-    </div>
-  );
+interface WorldIDAuthProps {
+  onSuccess?: () => void;
 }
 
-// Main component with Suspense wrapper
-export default function WorldIDCallback() {
+export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
+
+  // Use demo login for testing/development
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${apiUrl}/api/auth/demo-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nickname: 'Demo_User_' + Math.random().toString(36).substring(2, 8)
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Authentication error');
+      }
+
+      const authData = await response.json();
+      console.log('Login successful:', authData);
+      
+      // Store authentication data
+      login(authData.token, authData.user);
+      
+      // Navigate to categories page
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/jobs/categories');
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Authentication error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-primary mb-2">Loading...</h2>
-            <p className="text-gray-600">Please wait...</p>
-          </div>
+    <div className="flex flex-col items-center">
+      {error && (
+        <div className="mb-4 text-red-500 text-sm text-center">
+          {error}
         </div>
-      </div>
-    }>
-      <CallbackContent />
-    </Suspense>
+      )}
+      
+      <button
+        onClick={handleDemoLogin}
+        disabled={isLoading}
+        className="w-full bg-white text-primary font-medium py-3 px-4 rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+      >
+        {isLoading ? (
+          <div className="flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Connecting...
+          </div>
+        ) : (
+          'SIGN IN WITH DEMO ACCOUNT'
+        )}
+      </button>
+      
+      <p className="mt-4 text-sm text-gray-400 text-center">
+        This demo login bypasses World ID verification for testing purposes.
+      </p>
+    </div>
   );
 }
