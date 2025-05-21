@@ -1,12 +1,11 @@
-// /src/app/auth/callback/page.tsx
+// src/app/auth/callback/page.tsx
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
-// Callback content component
-function CallbackContent() {
+export default function WorldIDCallback() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -17,24 +16,25 @@ function CallbackContent() {
   useEffect(() => {
     const verifyCredential = async () => {
       try {
+        // Log received parameters
         console.log('Callback received with parameters:', 
                    Object.fromEntries(searchParams.entries()));
         
-        // Extract verification parameters
+        // Extract verification parameters as returned by World ID Mini App
+        // Note: Mini App returns parameters in the URL query string
         const proof = searchParams.get('proof');
         const nullifier_hash = searchParams.get('nullifier_hash');
         const merkle_root = searchParams.get('merkle_root');
         const credential_type = searchParams.get('credential_type') || 'orb';
-        // Get redirect URL from search params or default to categories
-        const redirectTo = searchParams.get('redirect') || '/jobs/categories';
         
+        // Check for required parameters
         if (!proof || !nullifier_hash || !merkle_root) {
           throw new Error('Incomplete verification parameters');
         }
         
         console.log('Sending verification to backend...');
         
-        // Send verification to backend
+        // Send verification data to backend
         const response = await fetch(`${apiUrl}/api/auth/verify`, {
           method: 'POST',
           headers: {
@@ -49,35 +49,35 @@ function CallbackContent() {
           })
         });
         
-        console.log('Backend response received:', response.status);
+        console.log('Backend response:', response.status);
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Backend error:', errorData);
-          throw new Error(errorData.error || 'Verification error');
+          console.error('Backend verification error:', errorData);
+          throw new Error(errorData.error || 'Verification failed');
         }
         
         const data = await response.json();
-        console.log('Successful verification, data received:', data);
+        console.log('Verification successful:', data);
         
-        // Login success
+        // Save authentication data
         login(data.token, data.user);
         
-        // Redirect to the specified page or categories
-        router.push(redirectTo);
+        // Redirect to categories page
+        router.push('/jobs/categories');
       } catch (err: any) {
-        console.error('Credential verification error:', err);
-        setError(err.message || 'Authentication error');
+        console.error('Verification error:', err);
+        setError(err.message || 'Authentication failed');
       } finally {
         setLoading(false);
       }
     };
     
-    // Verify credentials if proof is present
+    // Only proceed if we have proof parameter
     if (searchParams.has('proof')) {
       verifyCredential();
     } else {
-      console.error('No verification credentials received');
+      console.error('No verification parameters received');
       setError('No verification credentials received');
       setLoading(false);
     }
@@ -123,31 +123,12 @@ function CallbackContent() {
     );
   }
   
-  // Brief transitional state
+  // This should not be seen as the user should be redirected
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light">
       <div className="text-center">
         <p className="text-primary">Redirecting...</p>
       </div>
     </div>
-  );
-}
-
-// Main component with Suspense wrapper
-export default function WorldIDCallback() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-primary mb-2">Loading...</h2>
-            <p className="text-gray-600">Please wait...</p>
-          </div>
-        </div>
-      </div>
-    }>
-      <CallbackContent />
-    </Suspense>
   );
 }

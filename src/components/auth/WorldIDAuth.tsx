@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
@@ -15,13 +15,39 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
 
-  // Handle demo login for testing/development
+  // Function to handle World ID authentication through Mini App
+  const handleWorldIDAuth = () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // App parameters
+      const appId = 'app_805d8030cf7f6ba31af4010e5fd9a143'; // Your World ID App ID
+      const action = 'doup-user-verification'; // Must match exactly what's in the Developer Portal
+      
+      // Construct properly encoded redirect URL - this is critical
+      const redirectUrl = encodeURIComponent(`${window.location.origin}/auth/callback`);
+      
+      // Construct the Mini App URL according to specs
+      const miniAppUrl = `https://worldcoin.org/mini-app?app_id=${appId}&action=${action}&redirect_url=${redirectUrl}`;
+      
+      console.log('Opening World ID Mini App:', miniAppUrl);
+      
+      // Open the Mini App in the current window
+      window.location.href = miniAppUrl;
+    } catch (err: any) {
+      console.error('Error launching Mini App:', err);
+      setError('Failed to launch World ID verification');
+      setIsLoading(false);
+    }
+  };
+
+  // Alternative login for development/testing
   const handleDemoLogin = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Create a random nickname for the demo user
       const nickname = 'Demo_User_' + Math.random().toString(36).substring(2, 8);
       console.log('Starting demo login for:', nickname);
       
@@ -41,13 +67,9 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
       const authData = await response.json();
       console.log('Login successful:', authData);
       
-      // Store authentication data
       login(authData.token, authData.user);
       
-      // Explicit navigation with Next.js router
-      console.log('Redirecting to categories page...');
-      
-      // Use setTimeout to ensure the login state is updated before navigation
+      // Navigate after login
       setTimeout(() => {
         if (onSuccess) {
           onSuccess();
@@ -64,15 +86,16 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center space-y-4">
       {error && (
         <div className="mb-4 text-red-500 text-sm text-center">
           {error}
         </div>
       )}
       
+      {/* World ID Auth Button */}
       <button
-        onClick={handleDemoLogin}
+        onClick={handleWorldIDAuth}
         disabled={isLoading}
         className="w-full bg-white text-primary font-medium py-3 px-4 rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
       >
@@ -88,6 +111,17 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
           'SIGN IN WITH WORLD ID'
         )}
       </button>
+      
+      {/* Demo Login (for development only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={handleDemoLogin}
+          disabled={isLoading}
+          className="w-full bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center text-sm"
+        >
+          Development: Demo Login
+        </button>
+      )}
     </div>
   );
 }
