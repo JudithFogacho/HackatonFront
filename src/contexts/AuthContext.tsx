@@ -72,16 +72,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Función para iniciar sesión
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    
-    // Guardar en localStorage
-    if (typeof window !== 'undefined') {
+ // En src/contexts/AuthContext.tsx, busca la función login y asegúrate de que sea así:
+
+const login = (newToken: string, newUser: User) => {
+  console.log('Setting auth state:', { token: newToken, user: newUser });
+  
+  // Actualizar estado inmediatamente
+  setToken(newToken);
+  setUser(newUser);
+  
+  // Guardar en localStorage
+  if (typeof window !== 'undefined') {
+    try {
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
+      console.log('Auth data saved to localStorage');
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
     }
-  };
+  }
+};
 
   // Función para cerrar sesión
   const logout = () => {

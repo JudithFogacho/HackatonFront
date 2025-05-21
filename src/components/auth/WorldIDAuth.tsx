@@ -15,20 +15,22 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
 
-  // Use demo login for testing/development
+  // Handle demo login for testing/development
   const handleDemoLogin = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
+      // Create a random nickname for the demo user
+      const nickname = 'Demo_User_' + Math.random().toString(36).substring(2, 8);
+      console.log('Starting demo login for:', nickname);
+      
       const response = await fetch(`${apiUrl}/api/auth/demo-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          nickname: 'Demo_User_' + Math.random().toString(36).substring(2, 8)
-        })
+        body: JSON.stringify({ nickname })
       });
 
       if (!response.ok) {
@@ -42,12 +44,17 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
       // Store authentication data
       login(authData.token, authData.user);
       
-      // Navigate to categories page
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push('/jobs/categories');
-      }
+      // Explicit navigation with Next.js router
+      console.log('Redirecting to categories page...');
+      
+      // Use setTimeout to ensure the login state is updated before navigation
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push('/jobs/categories');
+        }
+      }, 100);
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Authentication error. Please try again.');
@@ -78,13 +85,9 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
             Connecting...
           </div>
         ) : (
-          'SIGN IN WITH DEMO ACCOUNT'
+          'SIGN IN WITH WORLD ID'
         )}
       </button>
-      
-      <p className="mt-4 text-sm text-gray-400 text-center">
-        This demo login bypasses World ID verification for testing purposes.
-      </p>
     </div>
   );
 }

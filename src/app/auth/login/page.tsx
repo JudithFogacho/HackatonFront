@@ -90,7 +90,7 @@ function LoginContent() {
             variants={itemVariants}
             className="mt-10"
           >
-            <WorldIDAuth onSuccess={() => router.push(redirect)} />
+            <WorldIDAuth onSuccess={() => router.push('/jobs/categories')} />
           </motion.div>
         </form>
 

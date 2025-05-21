@@ -1,8 +1,10 @@
+// src/middleware.ts
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Rutas públicas que no requieren autenticación
-const publicRoutes = ['/auth/login'];
+const publicRoutes = ['/auth/login', '/auth/signup', '/auth/callback'];
 
 // Verifica si una ruta es pública
 const isPublicRoute = (path: string) => {
@@ -16,13 +18,17 @@ export function middleware(request: NextRequest) {
   // Obtener el token de autenticación
   const token = request.cookies.get('token')?.value;
   
+  console.log('Middleware checking path:', path, 'Token exists:', !!token);
+  
   // Si la ruta es la raíz, redirigir a login
   if (path === '/') {
+    console.log('Root path detected, redirecting to /auth/login');
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
   
   // Si la ruta no es pública y no hay token, redirigir a login
   if (!isPublicRoute(path) && !token) {
+    console.log('Protected route without token, redirecting to login');
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', path);
     return NextResponse.redirect(loginUrl);
@@ -30,6 +36,7 @@ export function middleware(request: NextRequest) {
   
   // Si hay token y el usuario está en login, redirigir a la página principal
   if (token && path === '/auth/login') {
+    console.log('User already logged in, redirecting to categories');
     return NextResponse.redirect(new URL('/jobs/categories', request.url));
   }
   
