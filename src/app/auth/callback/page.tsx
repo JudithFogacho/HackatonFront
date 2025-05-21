@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
-// Componente que usa useSearchParams
+// Callback content component
 function CallbackContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,22 +17,24 @@ function CallbackContent() {
   useEffect(() => {
     const verifyCredential = async () => {
       try {
-        console.log('Callback recibido con parámetros:', 
+        console.log('Callback received with parameters:', 
                    Object.fromEntries(searchParams.entries()));
         
-        // Extrae los parámetros importantes de la URL
+        // Extract verification parameters
         const proof = searchParams.get('proof');
         const nullifier_hash = searchParams.get('nullifier_hash');
         const merkle_root = searchParams.get('merkle_root');
         const credential_type = searchParams.get('credential_type') || 'orb';
+        // Get redirect URL from search params or default to categories
+        const redirectTo = searchParams.get('redirect') || '/jobs/categories';
         
         if (!proof || !nullifier_hash || !merkle_root) {
-          throw new Error('Parámetros de verificación incompletos');
+          throw new Error('Incomplete verification parameters');
         }
         
-        console.log('Enviando verificación al backend...');
+        console.log('Sending verification to backend...');
         
-        // Envía la verificación a tu backend
+        // Send verification to backend
         const response = await fetch(`${apiUrl}/api/auth/verify`, {
           method: 'POST',
           headers: {
@@ -47,56 +49,56 @@ function CallbackContent() {
           })
         });
         
-        console.log('Respuesta del backend recibida:', response.status);
+        console.log('Backend response received:', response.status);
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Error del backend:', errorData);
-          throw new Error(errorData.error || 'Error en verificación');
+          console.error('Backend error:', errorData);
+          throw new Error(errorData.error || 'Verification error');
         }
         
         const data = await response.json();
-        console.log('Verificación exitosa, datos recibidos:', data);
+        console.log('Successful verification, data received:', data);
         
-        // Login exitoso
+        // Login success
         login(data.token, data.user);
         
-        // Redireccionar a la página principal o dashboard
-        router.push('/jobs/categories');
+        // Redirect to the specified page or categories
+        router.push(redirectTo);
       } catch (err: any) {
-        console.error('Error verificando credencial:', err);
-        setError(err.message || 'Error en autenticación');
+        console.error('Credential verification error:', err);
+        setError(err.message || 'Authentication error');
       } finally {
         setLoading(false);
       }
     };
     
-    // Verificar si tenemos los parámetros necesarios en la URL
+    // Verify credentials if proof is present
     if (searchParams.has('proof')) {
       verifyCredential();
     } else {
-      console.error('No se recibieron credenciales de verificación');
-      setError('No se recibieron credenciales de verificación');
+      console.error('No verification credentials received');
+      setError('No verification credentials received');
       setLoading(false);
     }
   }, [searchParams, router, login, apiUrl]);
   
-  // Interfaz visual mientras se procesa la verificación
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-primary mb-2">Verificando identidad</h2>
-            <p className="text-gray-600">Por favor espera mientras verificamos tu identidad con World ID...</p>
+            <h2 className="text-xl font-bold text-primary mb-2">Verifying identity</h2>
+            <p className="text-gray-600">Please wait while we verify your identity with World ID...</p>
           </div>
         </div>
       </div>
     );
   }
   
-  // Mostrar errores si ocurren
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
@@ -107,13 +109,13 @@ function CallbackContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-primary mb-2">Error de verificación</h2>
+            <h2 className="text-xl font-bold text-primary mb-2">Verification Error</h2>
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => router.push('/auth/login')}
               className="bg-primary text-white font-medium py-2 px-4 rounded-lg"
             >
-              Volver al inicio de sesión
+              Return to login
             </button>
           </div>
         </div>
@@ -121,17 +123,17 @@ function CallbackContent() {
     );
   }
   
-  // Este estado no debería verse normalmente - solo aparece brevemente antes de la redirección
+  // Brief transitional state
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light">
       <div className="text-center">
-        <p className="text-primary">Redirecccionando...</p>
+        <p className="text-primary">Redirecting...</p>
       </div>
     </div>
   );
 }
 
-// Componente principal que envuelve el contenido en Suspense
+// Main component with Suspense wrapper
 export default function WorldIDCallback() {
   return (
     <Suspense fallback={
@@ -139,8 +141,8 @@ export default function WorldIDCallback() {
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-primary mb-2">Cargando...</h2>
-            <p className="text-gray-600">Por favor espera...</p>
+            <h2 className="text-xl font-bold text-primary mb-2">Loading...</h2>
+            <p className="text-gray-600">Please wait...</p>
           </div>
         </div>
       </div>
