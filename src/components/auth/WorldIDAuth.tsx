@@ -81,8 +81,18 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
     setError(null);
     
     try {
+      // Primero intentamos verificar si WorldID está disponible
+      if (!window.WorldID) {
+        console.log('WorldID no disponible, usando método alternativo');
+        handleAlternativeAuth();
+        return;
+      }
+      
+      // Si WorldID está disponible, usamos Mini App
       // Construir la URL de la Mini App con los parámetros necesarios
       const miniAppUrl = `https://worldcoin.org/mini-app?app_id=app_805d8030cf7f6ba31af4010e5fd9a143&action=doup-user-verification&redirect_url=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
+      
+      console.log('Redirigiendo a Mini App:', miniAppUrl);
       
       // Redireccionar al usuario a la Mini App
       window.location.href = miniAppUrl;
@@ -97,54 +107,44 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   };
 
   // Método alternativo si WorldID JS no está disponible
-  // Método alternativo si WorldID JS no está disponible
-const handleAlternativeAuth = async () => {
-  console.warn('La API de World ID no está disponible, usando método alternativo');
-  
-  try {
-    // Primero, obtener un nonce del servidor
-    const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`);
+  const handleAlternativeAuth = async () => {
+    console.warn('La API de World ID no está disponible, usando método alternativo');
     
-    if (!nonceResponse.ok) {
-      throw new Error('Error al obtener nonce para la autenticación alternativa');
-    }
-    
-    const { nonce } = await nonceResponse.json();
-    console.log('Nonce obtenido para auth alternativa:', nonce);
-    
-    // Hacer una solicitud al endpoint de autenticación alternativo con el nonce
-    const response = await fetch(`${apiUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        nonce, // Incluir el nonce obtenido
-        nickname: 'User_' + Math.random().toString(36).substring(2, 8)
-      })
-    });
+    try {
+      setIsLoading(true);
+      
+      // Hacer una solicitud al endpoint de autenticación alternativo simplificado
+      const response = await fetch(`${apiUrl}/api/auth/demo-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nickname: 'Demo_User_' + Math.random().toString(36).substring(2, 8)
+        })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error en la autenticación alternativa');
-    }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error en la autenticación alternativa');
+      }
 
-    const authData = await response.json();
-    
-    // Guardar información de autenticación
-    login(authData.token, authData.user);
-    
-    // Llamar al callback de éxito si existe
-    if (onSuccess) {
-      onSuccess();
+      const authData = await response.json();
+      
+      // Guardar información de autenticación
+      login(authData.token, authData.user);
+      
+      // Llamar al callback de éxito si existe
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err: any) {
+      console.error('Error durante la autenticación alternativa:', err);
+      setError(err.message || 'Error al autenticar. Inténtalo de nuevo.');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err: any) {
-    console.error('Error durante la autenticación alternativa:', err);
-    setError(err.message || 'Error al autenticar. Inténtalo de nuevo.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="flex flex-col items-center">
