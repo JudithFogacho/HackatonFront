@@ -2,10 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { User } from '@/types';
 
 interface WorldIDAuthProps {
   onSuccess?: () => void;
+}
+
+// Agregar esto al principio del archivo WorldIDAuth.tsx (después de los imports)
+declare global {
+  interface Window {
+    WorldID?: {
+      init: (config: {
+        appId: string;
+        action: string;
+        enableTelemetry?: boolean;
+      }) => void;
+      verify: (options: {
+        signal?: string;
+        action?: string;
+        enable_telemetry?: boolean;
+      }) => Promise<{
+        merkle_root: string;
+        nullifier_hash: string;
+        proof: string;
+        credential_type: string;
+      }>;
+    };
+  }
 }
 
 export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
@@ -42,9 +64,12 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const initWorldID = () => {
     if (!window.WorldID) return;
 
+    // La acción debe coincidir EXACTAMENTE con la del backend
+    const action = "doup_user_verification";
+
     window.WorldID.init({
       appId: process.env.NEXT_PUBLIC_WORLD_ID_APP_ID || 'app_805d8030cf7f6ba31af4010e5fd9a143',
-      action: process.env.NEXT_PUBLIC_WORLD_ID_ACTION || 'doup_user_verification',
+      action: action,
       enableTelemetry: false
     });
   };
@@ -61,25 +86,28 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
         return;
       }
 
-      // Primero obtenemos un nonce del servidor
-      const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // La acción debe coincidir EXACTAMENTE con la del backend
+      const action = "doup_user_verification";
 
+      // Obtener un nonce del servidor
+      const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`);
+      
       if (!nonceResponse.ok) {
         throw new Error('Error al obtener nonce para la autenticación');
       }
-
+      
       const { nonce } = await nonceResponse.json();
-
+      
+      console.log('Nonce obtenido:', nonce); // Para depuración
+      
       // Iniciar la verificación con World ID
       const verificationResponse = await window.WorldID.verify({
-        signal: nonce, // Usar el nonce como señal para prevenir ataques de reproducción
+        signal: nonce, // Usar el nonce como signal
+        action: action, // IMPORTANTE: Usar el mismo action que en init
         enable_telemetry: false
       });
+      
+      console.log('Verificación de World ID:', verificationResponse); // Para depuración
 
       if (!verificationResponse || !verificationResponse.nullifier_hash) {
         throw new Error('Verificación cancelada o fallida');
@@ -96,7 +124,8 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
           nullifier_hash: verificationResponse.nullifier_hash,
           proof: verificationResponse.proof,
           credential_type: verificationResponse.credential_type,
-          action: process.env.NEXT_PUBLIC_WORLD_ID_ACTION || 'doup_user_verification'
+          action: action, // Usar el mismo action en todos lados
+          signal: nonce // Incluir el nonce como signal
         })
       });
 
@@ -128,7 +157,6 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
     
     try {
       // Hacer una solicitud al endpoint de autenticación alternativo
-      // Esto podría ser un flujo OAuth manual o cualquier otra estrategia
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -186,26 +214,4 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
       </button>
     </div>
   );
-}
-
-// Extender Window para incluir WorldID
-declare global {
-  interface Window {
-    WorldID?: {
-      init: (config: {
-        appId: string;
-        action: string;
-        enableTelemetry?: boolean;
-      }) => void;
-      verify: (options: {
-        signal?: string;
-        enable_telemetry?: boolean;
-      }) => Promise<{
-        merkle_root: string;
-        nullifier_hash: string;
-        proof: string;
-        credential_type: string;
-      }>;
-    };
-  }
 }
