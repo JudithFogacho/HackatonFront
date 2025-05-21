@@ -76,78 +76,22 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   };
 
   // Manejar el inicio de sesión con World ID
-  const handleWorldIDAuth = async () => {
+  const handleWorldIDAuth = () => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      // Si WorldID no está disponible, usar la implementación alternativa
-      if (!window.WorldID) {
-        await handleAlternativeAuth();
-        return;
-      }
-
-      // La acción debe coincidir EXACTAMENTE con la del portal de desarrollador
-      const action = "doup-user-verification";
-
-      // Obtener un nonce del servidor
-      const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`);
+      // Construir la URL de la Mini App con los parámetros necesarios
+      const miniAppUrl = `https://worldcoin.org/mini-app?app_id=app_805d8030cf7f6ba31af4010e5fd9a143&action=doup-user-verification&redirect_url=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
       
-      if (!nonceResponse.ok) {
-        throw new Error('Error al obtener nonce para la autenticación');
-      }
+      // Redireccionar al usuario a la Mini App
+      window.location.href = miniAppUrl;
       
-      const { nonce } = await nonceResponse.json();
-      
-      console.log('Nonce obtenido:', nonce); // Para depuración
-      
-      // Iniciar la verificación con World ID
-      const verificationResponse = await window.WorldID.verify({
-        signal: nonce, // Asegúrate de que esto sea el nonce obtenido del servidor
-        action: "doup-user-verification", // Debe coincidir exactamente con el identificador en el portal
-        enable_telemetry: false
-      });
-      
-      console.log('Verificación de World ID:', verificationResponse); // Para depuración
-
-      if (!verificationResponse || !verificationResponse.nullifier_hash) {
-        throw new Error('Verificación cancelada o fallida');
-      }
-
-      // Enviar prueba de verificación al backend
-      const authResponse = await fetch(`${apiUrl}/api/auth/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          merkle_root: verificationResponse.merkle_root,
-          nullifier_hash: verificationResponse.nullifier_hash,
-          proof: verificationResponse.proof,
-          credential_type: verificationResponse.credential_type,
-          action: "doup-user-verification", // Usar el mismo action
-          signal: nonce // Asegúrate de que esto sea el mismo nonce
-        })
-      });
-
-      if (!authResponse.ok) {
-        const errorData = await authResponse.json();
-        throw new Error(errorData.error || 'Error en la verificación');
-      }
-
-      const authData = await authResponse.json();
-
-      // Guardar la información de autenticación
-      login(authData.token, authData.user);
-
-      // Llamar al callback de éxito si existe
-      if (onSuccess) {
-        onSuccess();
-      }
+      // No necesitas el resto del código, ya que el manejo de la autenticación
+      // se realizará cuando World ID redireccione de vuelta a tu app
     } catch (err: any) {
-      console.error('Error durante la autenticación:', err);
-      setError(err.message || 'Error al autenticar con World ID. Inténtalo de nuevo.');
-    } finally {
+      console.error('Error al iniciar autenticación:', err);
+      setError('Error al iniciar la autenticación con World ID');
       setIsLoading(false);
     }
   };
