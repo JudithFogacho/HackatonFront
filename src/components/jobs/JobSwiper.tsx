@@ -1,3 +1,4 @@
+// src/components/jobs/JobSwiper.tsx
 'use client';
 
 import { useState, useRef } from 'react';
@@ -14,11 +15,11 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitX, setExitX] = useState<number | null>(null);
   
-  // Obtener el trabajo actual
+  // Get current job
   const currentJob = jobs[currentIndex];
   const allJobsSwiped = currentIndex >= jobs.length;
   
-  // Configurar valores de movimiento para la animación
+  // Motion values for animation
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-20, 20]);
   const opacity = useTransform(x, 
@@ -26,16 +27,16 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
     [0.5, 1, 1, 1, 0.5]
   );
   
-  // Indicadores visuales de izquierda y derecha
+  // Visual indicators for left/right
   const leftIndicatorOpacity = useTransform(x, [-150, 0], [1, 0]);
   const rightIndicatorOpacity = useTransform(x, [0, 150], [0, 1]);
   
-  // Manejar el final del arrastre
+  // Handle drag end
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 100; // Umbral para considerar un swipe completo
+    const threshold = 100; // Threshold for swipe
     
     if (info.offset.x > threshold) {
-      // Swipe a la derecha - Interesado
+      // Swipe right - Interested
       setExitX(200);
       setTimeout(() => {
         onSwipe('right', currentJob._id);
@@ -44,7 +45,7 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
         x.set(0);
       }, 300);
     } else if (info.offset.x < -threshold) {
-      // Swipe a la izquierda - Descartar
+      // Swipe left - Discard
       setExitX(-200);
       setTimeout(() => {
         onSwipe('left', currentJob._id);
@@ -53,25 +54,27 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
         x.set(0);
       }, 300);
     } else {
-      // Reset si no llegó al umbral
+      // Reset if not enough swipe
       x.set(0);
     }
   };
   
-  // Reiniciar y volver a mostrar todos los trabajos
+  // Reset and show all jobs again
   const handleReset = () => {
     setCurrentIndex(0);
   };
   
-  // Formatear el salario
-  const formatSalary = (job: Job) => {
-    if (!job.salary) return 'Salario no especificado';
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    const { min, max, currency } = job.salary;
-    return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    return `${diffDays} ${diffDays === 1 ? 'Día' : 'Días'}`;
   };
   
-  // Si no hay más trabajos por mostrar
+  // If no more jobs
   if (allJobsSwiped) {
     return (
       <div className="flex flex-col items-center justify-center h-64 py-6">
@@ -91,7 +94,7 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
   
   return (
     <div className="relative h-[450px] w-full">
-      {/* Tarjeta de trabajo */}
+      {/* Job card */}
       <motion.div 
         className="absolute top-0 left-0 w-full"
         drag="x"
@@ -106,21 +109,23 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
           className="bg-primary rounded-xl shadow-lg overflow-hidden w-full"
           onClick={() => onJobClick(currentJob._id)}
         >
-          {/* Encabezado de la tarjeta */}
+          {/* Job posting info */}
+          <div className="bg-primary-dark px-4 py-2 text-white text-sm">
+            Publicado: {formatDate(currentJob.postedAt)}
+          </div>
+          
+          {/* Job title and company */}
           <div className="p-4 border-b border-primary-dark">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-xs text-gray-300">Publicado: {new Date(currentJob.postedAt).toLocaleDateString()}</p>
-                <h2 className="text-xl font-bold text-white uppercase mt-1">{currentJob.title}</h2>
-                <p className="text-secondary font-medium">{currentJob.company}</p>
-              </div>
+            <h2 className="text-xl font-bold text-white uppercase mb-1">{currentJob.title}</h2>
+            <div className="flex justify-between items-center">
+              <p className="text-secondary font-medium">{currentJob.company}</p>
               <div className="bg-secondary text-primary px-3 py-1 rounded-lg text-sm font-bold">
-                {currentJob.salary?.min ? `$${currentJob.salary.min}` : 'N/A'} APROX
+                ${currentJob.salary?.min || 0} APROX
               </div>
             </div>
           </div>
           
-          {/* Cuerpo de la tarjeta */}
+          {/* Job details */}
           <div className="p-4">
             <p className="text-white mb-4">{currentJob.description}</p>
             
@@ -147,7 +152,7 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
             </ul>
           </div>
           
-          {/* Pie de la tarjeta con botones */}
+          {/* Action buttons */}
           <div className="flex border-t border-primary-dark">
             <div className="w-1/2 p-3 text-center border-r border-primary-dark">
               <button className="text-red-400 font-medium">
@@ -169,7 +174,7 @@ export default function JobSwiper({ jobs, onSwipe, onJobClick }: JobSwiperProps)
         </div>
       </motion.div>
       
-      {/* Indicadores de swipe */}
+      {/* Swipe indicators */}
       <motion.div 
         className="absolute top-1/2 left-8 transform -translate-y-1/2 bg-red-500 rounded-full p-3"
         style={{ opacity: leftIndicatorOpacity }}

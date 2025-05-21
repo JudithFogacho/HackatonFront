@@ -1,3 +1,4 @@
+// src/app/jobs/categories/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,11 +11,27 @@ import { motion } from 'framer-motion';
 
 export default function CategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [authDebug, setAuthDebug] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
   
-  // Categorías predefinidas con sus iconos
+  // Load user data on component mount
+  useEffect(() => {
+    const storedData = localStorage.getItem('userData');
+    if (storedData) {
+      try {
+        setUserData(JSON.parse(storedData));
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
+    
+    // Simulate loading data
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  // Categories with their icons
   const categories: Category[] = [
     {
       id: 'design',
@@ -81,34 +98,12 @@ export default function CategoriesPage() {
     }
   ];
 
-  useEffect(() => {
-    // Verificar autenticación
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch (e) {
-        console.error('Error parsing user data', e);
-      }
-    }
-
-    // Simular carga de datos
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
     router.push(`/jobs?category=${categoryId}`);
   };
 
-  const toggleDebug = () => {
-    setAuthDebug(!authDebug);
-  };
-
-  // Animaciones para la cuadrícula de categorías
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -133,38 +128,10 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-primary-light">
-      <Header title="Do Up" />
+      <Header />
       
       <main className="flex-1 p-4 pb-20">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-primary">Categorías</h1>
-          
-          {/* Botón discreto para mostrar información de depuración */}
-          <button 
-            onClick={toggleDebug}
-            className="text-xs text-gray-400 p-1 rounded-full hover:bg-gray-100"
-            aria-label="Debug info"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
-        </div>
-        
-        {/* Panel de depuración que se puede mostrar/ocultar */}
-        {authDebug && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="p-3 bg-green-100 rounded-lg mb-4 overflow-hidden"
-          >
-            <p className="text-sm font-medium">Estado de autenticación:</p>
-            <p className="text-sm">Usuario: {user ? user.username : 'No autenticado'}</p>
-            <p className="text-sm">Token en cookies: Sí (verificado por middleware)</p>
-            <p className="text-xs text-gray-500 mt-1">Si puedes ver esta página, el middleware ha permitido el acceso.</p>
-          </motion.div>
-        )}
+        <h1 className="text-2xl font-bold text-primary mb-6">Categorías</h1>
         
         {isLoading ? (
           <div className="flex justify-center items-center h-64">

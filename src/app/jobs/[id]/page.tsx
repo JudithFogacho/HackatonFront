@@ -1,8 +1,8 @@
+// src/app/jobs/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/common/Header';
 import BottomNavigation from '@/components/common/BottomNavigation';
 import { Job, JobType } from '@/types';
@@ -16,117 +16,89 @@ export default function JobDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentPurpose, setPaymentPurpose] = useState<'link' | 'chat' | null>(null);
+  const [paymentPurpose, setPaymentPurpose] = useState<'link' | 'chat'>('link');
   const [transaction, setTransaction] = useState<{ reference: string; transactionId: string } | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://hackatondoup.onrender.com';
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
   
   useEffect(() => {
-    const fetchJobDetails = async () => {
+    const loadJobDetails = async () => {
       setIsLoading(true);
-      setError(null);
       
       try {
-        const response = await fetch(`${apiUrl}/api/jobs/${id}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
+        // In a real app, this would be an API call
+        // For now, use sample data
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (!response.ok) {
-          throw new Error('Error al cargar los detalles del trabajo');
-        }
+        // Find the job in our mock data
+        const sampleJob: Job = {
+          _id: id,
+          title: 'UX/UI DESIGNER PARA PAGINA WEB',
+          company: 'TechCorp',
+          description: 'Diseñar interfaces de usuario intuitivas y atractivas para aplicaciones web y móviles. Trabajarás en estrecha colaboración con equipos de producto y desarrollo.',
+          requirements: [
+            '3+ años de experiencia en diseño UX/UI',
+            'Dominio de Figma y Adobe XD',
+            'Portfolio destacado de proyectos anteriores',
+            'Conocimientos de principios de diseño web',
+            'Capacidad para iterar rápidamente en diseños'
+          ],
+          salary: {
+            min: 300,
+            max: 500,
+            currency: 'USD'
+          },
+          location: 'Remoto',
+          remote: true,
+          type: JobType.FREELANCE,
+          category: 'Diseño',
+          postedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+          active: true
+        };
         
-        const data = await response.json();
-        setJob(data);
+        setJob(sampleJob);
       } catch (err: any) {
         console.error('Error fetching job details:', err);
-        setError(err.message || 'Error al cargar los detalles del trabajo');
-        
-        // Si no hay conexión, usar datos de ejemplo
-        if (!navigator.onLine || (err.message && err.message.includes('Failed to fetch'))) {
-          setJob(getSampleJob(id));
-        }
+        setError('Error al cargar los detalles del trabajo');
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchJobDetails();
-  }, [apiUrl, id, token]);
+    loadJobDetails();
+  }, [id]);
   
   const handleGenerateLink = async () => {
-    if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/jobs/${id}`);
-      return;
-    }
-    
-    try {
-      const response = await fetch(`${apiUrl}/api/jobs/${id}/link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.status === 'pending') {
-        setTransaction({
-          reference: data.reference,
-          transactionId: data.transactionId
-        });
-        setPaymentPurpose('link');
-        setShowPaymentModal(true);
-      } else {
-        setError(data.error || 'Error al iniciar el proceso de generación de enlace');
-      }
-    } catch (err) {
-      console.error('Error generating link:', err);
-      setError('Error de conexión. Inténtalo de nuevo.');
-    }
+    // In a real app, this would make an API call to start the payment process
+    // For now, simulate it
+    setPaymentPurpose('link');
+    setTransaction({
+      reference: 'ref_' + Math.random().toString(36).substring(2, 10),
+      transactionId: 'tx_' + Math.random().toString(36).substring(2, 10)
+    });
+    setShowPaymentModal(true);
   };
   
   const handleStartChat = async () => {
-    if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/jobs/${id}`);
-      return;
-    }
-    
-    router.push(`/chat/new?jobId=${id}`);
+    // In a real app, make API call first
+    setPaymentPurpose('chat');
+    setTransaction({
+      reference: 'ref_' + Math.random().toString(36).substring(2, 10),
+      transactionId: 'tx_' + Math.random().toString(36).substring(2, 10)
+    });
+    setShowPaymentModal(true);
   };
   
-  const handlePaymentSuccess = async (transactionId: string) => {
-    if (paymentPurpose === 'link') {
-      try {
-        const response = await fetch(`${apiUrl}/api/jobs/complete-link`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            jobId: id,
-            transactionId
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-          setGeneratedLink(data.link);
-          setShowPaymentModal(false);
-        } else {
-          setError(data.error || 'Error al completar la generación del enlace');
-        }
-      } catch (err) {
-        console.error('Error completing link generation:', err);
-        setError('Error de conexión. Inténtalo de nuevo.');
-      }
+  const handlePaymentSuccess = (transactionId: string, link?: string) => {
+    setShowPaymentModal(false);
+    
+    if (paymentPurpose === 'link' && link) {
+      setGeneratedLink(link);
+    } else if (paymentPurpose === 'chat') {
+      // Redirect to chat
+      router.push(`/chat?jobId=${id}`);
     }
-    // Manejar otros propósitos de pago si se añaden en el futuro
   };
   
   if (isLoading) {
@@ -170,13 +142,13 @@ export default function JobDetailPage() {
         transition={{ duration: 0.3 }}
       >
         <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6">
-          {/* Encabezado del trabajo */}
+          {/* Job header */}
           <div className="p-4 border-b border-primary-dark">
             <h1 className="text-xl font-bold text-white uppercase">{job.title}</h1>
             <p className="text-secondary font-medium">{job.company}</p>
           </div>
           
-          {/* Detalles del trabajo */}
+          {/* Job details */}
           <div className="p-4">
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-3 py-1 rounded-full bg-primary-dark text-white text-xs">
@@ -222,7 +194,7 @@ export default function JobDetailPage() {
           </div>
         </div>
         
-        {/* Enlace generado */}
+        {/* Generated link */}
         {generatedLink && (
           <div className="bg-green-100 border border-green-300 rounded-lg p-4 mb-6">
             <h3 className="text-green-800 font-medium mb-2">¡Enlace generado correctamente!</h3>
@@ -240,7 +212,7 @@ export default function JobDetailPage() {
           </div>
         )}
         
-        {/* Botones de acción */}
+        {/* Action buttons */}
         <div className="flex flex-col gap-3">
           {!generatedLink && (
             <button
@@ -269,54 +241,23 @@ export default function JobDetailPage() {
       
       <BottomNavigation />
       
-      {/* Modal de pago (Se implementará después) */}
-      {/* {showPaymentModal && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          reference={transaction?.reference
-          {/* Modal de pago (Se implementará después) */}
+      {/* Payment Modal */}
       {showPaymentModal && transaction && (
         <PaymentModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
+          title={
+            paymentPurpose === 'link' 
+              ? '¿ESTÁ SEGURO ESTA ACCIÓN SE DE GENERAR ESTE LINK?' 
+              : 'ESTA CONSULTA TIENE UN PRECIO DE 1 WLD'
+          }
           reference={transaction.reference}
           transactionId={transaction.transactionId}
           amount={1}
-          purpose={paymentPurpose === 'link' ? 'Generar enlace de aplicación' : 'Consulta con IA'}
+          purpose={paymentPurpose}
           onSuccess={handlePaymentSuccess}
         />
       )}
     </div>
   );
-}
-
-// Datos de ejemplo para usar cuando no hay conexión
-function getSampleJob(id: string): Job {
-  return {
-    _id: id,
-    title: 'Diseñador UX/UI Senior',
-    company: 'TechCorp',
-    description: 'Buscamos un diseñador UX/UI con experiencia para unirse a nuestro equipo y crear interfaces innovadoras para nuestros productos digitales. Trabajarás en estrecha colaboración con equipos de producto y desarrollo.',
-    requirements: [
-      '5+ años de experiencia en diseño UX/UI',
-      'Dominio de Figma, Adobe XD y herramientas de prototipado',
-      'Portfolio destacado con proyectos relevantes',
-      'Experiencia en investigación de usuarios y pruebas de usabilidad',
-      'Capacidad para comunicar ideas de diseño efectivamente'
-    ],
-    salary: {
-      min: 3500,
-      max: 5000,
-      currency: 'USD'
-    },
-    location: 'Madrid, España',
-    remote: true,
-    type: JobType.FULL_TIME,
-    category: 'Diseño',
-    postedAt: new Date().toISOString(),
-    active: true,
-    applicationUrl: 'https://example.com/apply',
-    contactEmail: 'jobs@techcorp.com'
-  };
 }

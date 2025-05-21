@@ -1,11 +1,11 @@
-// src/app/page.tsx
+// src/components/common/LoadingAnimation.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
-export default function HomePage() {
+export default function LoadingAnimation() {
   const [progress, setProgress] = useState(0);
   const router = useRouter();
 
@@ -16,7 +16,7 @@ export default function HomePage() {
           clearInterval(interval);
           // Redirect to login after animation completes
           setTimeout(() => {
-            router.replace('/auth/login');
+            router.push('/auth/login');
           }, 500);
           return 100;
         }

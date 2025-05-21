@@ -1,7 +1,7 @@
+// src/components/jobs/CategoryCard.tsx
 'use client';
 
 import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
 import { Category } from '@/types';
 
 interface CategoryCardProps {
@@ -12,12 +12,12 @@ interface CategoryCardProps {
 export default function CategoryCard({ category, onSelect }: CategoryCardProps) {
   return (
     <motion.div
-      className="bg-primary rounded-xl shadow-md overflow-hidden cursor-pointer"
+      className="bg-primary rounded-xl shadow-md overflow-hidden cursor-pointer h-32"
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
       onClick={onSelect}
     >
-      <div className="flex flex-col items-center justify-center p-6 h-32">
+      <div className="flex flex-col items-center justify-center p-6 h-full">
         <div className="text-white mb-3">
           {category.icon}
         </div>
