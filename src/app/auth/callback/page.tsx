@@ -1,11 +1,12 @@
 // /src/app/auth/callback/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function WorldIDCallback() {
+// Componente que usa useSearchParams
+function CallbackContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -127,5 +128,24 @@ export default function WorldIDCallback() {
         <p className="text-primary">Redirecccionando...</p>
       </div>
     </div>
+  );
+}
+
+// Componente principal que envuelve el contenido en Suspense
+export default function WorldIDCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center bg-primary-light p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+            <h2 className="text-xl font-bold text-primary mb-2">Cargando...</h2>
+            <p className="text-gray-600">Por favor espera...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <CallbackContent />
+    </Suspense>
   );
 }

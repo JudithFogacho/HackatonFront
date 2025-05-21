@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ClientAuthProvider from '@/components/common/ClientAuthProvider';
@@ -16,8 +16,6 @@ export const metadata: Metadata = {
   description: 'Encuentra trabajos y profesionales en una plataforma verificada con World ID',
   keywords: 'trabajos, profesionales, freelance, World ID, blockchain',
   authors: [{ name: 'Do Up Team' }],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  themeColor: '#004B62',
   icons: {
     icon: '/favicon.ico',
   },
@@ -28,6 +26,14 @@ export const metadata: Metadata = {
     description: 'Encuentra trabajos y profesionales verificados',
     siteName: 'Do Up',
   },
+};
+
+// Nueva exportación para viewport y themeColor
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#004B62',
 };
 
 // Layout principal que envuelve toda la aplicación
