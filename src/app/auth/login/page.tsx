@@ -41,7 +41,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-6">
+    <div className="min-h-screen flex flex-col justify-center items-center px-6 bg-primary">
       {/* Logo */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
@@ -109,7 +109,11 @@ function LoginContent() {
 // Componente principal que envuelve el contenido en Suspense
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex justify-center items-center bg-primary">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
+      </div>
+    }>
       <LoginContent />
     </Suspense>
   );

@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Para Next.js App Router necesitamos estas configuraciones
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirigir la página raíz a /auth/login
+[[redirects]]
+  from = "/"
+  to = "/auth/login"
+  status = 302
+
+# Redirigir todas las rutas no encontradas al index para la navegación del lado del cliente
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
