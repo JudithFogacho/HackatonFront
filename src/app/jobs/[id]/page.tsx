@@ -22,45 +22,56 @@ export default function JobDetailPage() {
   
   const router = useRouter();
   
+  
+    
   useEffect(() => {
     const loadJobDetails = async () => {
       setIsLoading(true);
       
       try {
-        // In a real app, this would be an API call
-        // For now, use sample data
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Hacer una llamada real a la API
+        const response = await fetch(`/api/jobs/${id}`);
         
-        // Find the job in our mock data
-        const sampleJob: Job = {
-          _id: id,
-          title: 'UX/UI DESIGNER PARA PAGINA WEB',
-          company: 'TechCorp',
-          description: 'Diseñar interfaces de usuario intuitivas y atractivas para aplicaciones web y móviles. Trabajarás en estrecha colaboración con equipos de producto y desarrollo.',
-          requirements: [
-            '3+ años de experiencia en diseño UX/UI',
-            'Dominio de Figma y Adobe XD',
-            'Portfolio destacado de proyectos anteriores',
-            'Conocimientos de principios de diseño web',
-            'Capacidad para iterar rápidamente en diseños'
-          ],
-          salary: {
-            min: 300,
-            max: 500,
-            currency: 'USD'
-          },
-          location: 'Remoto',
-          remote: true,
-          type: JobType.FREELANCE,
-          category: 'Diseño',
-          postedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-          active: true
-        };
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
         
-        setJob(sampleJob);
+        const jobData = await response.json();
+        setJob(jobData);
       } catch (err: any) {
         console.error('Error fetching job details:', err);
         setError('Error al cargar los detalles del trabajo');
+        
+        // Como fallback, usar datos de muestra para desarrollo
+        if (process.env.NODE_ENV === 'development') {
+          const sampleJob: Job = {
+            _id: id,
+            title: 'UX/UI DESIGNER PARA PAGINA WEB',
+            company: 'TechCorp',
+            description: 'Diseñar interfaces de usuario intuitivas y atractivas para aplicaciones web y móviles. Trabajarás en estrecha colaboración con equipos de producto y desarrollo.',
+            requirements: [
+              '3+ años de experiencia en diseño UX/UI',
+              'Dominio de Figma y Adobe XD',
+              'Portfolio destacado de proyectos anteriores',
+              'Conocimientos de principios de diseño web',
+              'Capacidad para iterar rápidamente en diseños'
+            ],
+            salary: {
+              min: 300,
+              max: 500,
+              currency: 'USD'
+            },
+            location: 'Remoto',
+            remote: true,
+            type: JobType.FREELANCE,
+            category: 'Diseño',
+            postedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            active: true
+          };
+          
+          setJob(sampleJob);
+          setError(null);
+        }
       } finally {
         setIsLoading(false);
       }

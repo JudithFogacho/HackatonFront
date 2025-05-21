@@ -100,7 +100,19 @@ export default function CategoriesPage() {
 
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
-    router.push(`/jobs?category=${categoryId}`);
+    // Map category IDs to actual category names used in the backend
+    const categoryMap: { [key: string]: string } = {
+      'design': 'Diseño',
+      'translation': 'Traducción',
+      'development': 'Desarrollo',
+      'marketing': 'Marketing',
+      'accounting': 'Contabilidad',
+      'writing': 'Redacción'
+    };
+    
+    // Use the mapped category name for the query
+    const categoryName = categoryMap[categoryId] || categoryId;
+    router.push(`/jobs?category=${encodeURIComponent(categoryName)}`);
   };
 
   // Animation variants
