@@ -1,120 +1,90 @@
+// src/components/auth/WorldIDAuth.tsx
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import WorldIDAuth from '@/components/auth/WorldIDAuth';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-// Componente que usa useSearchParams envuelto en Suspense
-function LoginContent() {
-  const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/jobs/categories';
-  
-  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
-  };
-
-  // Animaciones
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 100
-      }
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-6 bg-primary">
-      {/* Logo */}
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="mb-16"
-      >
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-secondary">DoUp</h1>
-        </div>
-      </motion.div>
-
-      {/* Formulario de login */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="w-full max-w-sm"
-      >
-        <motion.h2
-          variants={itemVariants}
-          className="text-2xl font-bold mb-8 text-center text-white"
-        >
-          Iniciar Sesión
-        </motion.h2>
-
-        <form className="space-y-6">
-          {/* Campo de usuario */}
-          <motion.div variants={itemVariants}>
-            <div className="border-b-2 border-gray-300 pb-2">
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={username}
-                onChange={handleUsernameChange}
-                placeholder="Username"
-                className="w-full bg-transparent outline-none text-white placeholder-gray-400"
-                disabled={isLoading}
-              />
-            </div>
-          </motion.div>
-
-          {/* Botón de World ID */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-10"
-          >
-            <WorldIDAuth onSuccess={() => router.push('/jobs/categories')} />
-          </motion.div>
-        </form>
-
-        {/* Mensaje informativo */}
-        <motion.p
-          variants={itemVariants}
-          className="mt-6 text-center text-sm text-gray-300"
-        >
-          Inicia sesión de forma segura verificando tu identidad con World ID.
-        </motion.p>
-      </motion.div>
-    </div>
-  );
+// Add props interface
+interface WorldIDAuthProps {
+  onSuccess?: () => void;
 }
 
-// Componente principal que envuelve el contenido en Suspense
-export default function LoginPage() {
+export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleAuth = async () => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Authentication process started');
+      
+      // Generate a realistic-looking token (for simulation)
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 
+                    btoa(JSON.stringify({userId: Date.now(), exp: Date.now() + 86400000})) + 
+                    '.simulated';
+      
+      // Simulate a user
+      const user = {
+        id: 'user-' + Date.now(),
+        username: 'WorldIDUser',
+        walletAddress: '0x' + Math.random().toString(36).substring(2, 14),
+        profilePictureUrl: null
+      };
+      
+      // Store user info in localStorage for client-side access
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Important: Server-side cookie setting via API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, user }),
+        credentials: 'include', // Important for cookies
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to authenticate');
+      }
+      
+      console.log('Authentication successful, redirecting to categories page');
+      
+      // Call the onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Otherwise do the default redirect
+        window.location.href = '/jobs/categories';
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      alert('Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex justify-center items-center bg-primary">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
-      </div>
-    }>
-      <LoginContent />
-    </Suspense>
+    <div className="flex flex-col items-center">
+      <button
+        onClick={handleAuth}
+        disabled={isLoading}
+        className="w-full bg-white text-primary font-medium py-3 px-4 rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+      >
+        {isLoading ? (
+          <div className="flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Connecting...
+          </div>
+        ) : (
+          'SIGN IN WITH WORLD ID'
+        )}
+      </button>
+    </div>
   );
 }
