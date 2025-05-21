@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
+// Definición de la interfaz para las props
 interface WorldIDAuthProps {
   onSuccess?: () => void;
 }
 
-// Agregar esto al principio del archivo WorldIDAuth.tsx (después de los imports)
+// Extender la interfaz Window para incluir WorldID
 declare global {
   interface Window {
     WorldID?: {
@@ -64,8 +65,8 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
   const initWorldID = () => {
     if (!window.WorldID) return;
 
-    // La acción debe coincidir EXACTAMENTE con la del backend
-    const action = "doup_user_verification";
+    // La acción debe coincidir EXACTAMENTE con la del portal de desarrollador
+    const action = "doup-user-verification";
 
     window.WorldID.init({
       appId: process.env.NEXT_PUBLIC_WORLD_ID_APP_ID || 'app_805d8030cf7f6ba31af4010e5fd9a143',
@@ -86,8 +87,8 @@ export default function WorldIDAuth({ onSuccess }: WorldIDAuthProps) {
         return;
       }
 
-      // La acción debe coincidir EXACTAMENTE con la del backend
-      const action = "doup_user_verification";
+      // La acción debe coincidir EXACTAMENTE con la del portal de desarrollador
+      const action = "doup-user-verification";
 
       // Obtener un nonce del servidor
       const nonceResponse = await fetch(`${apiUrl}/api/auth/nonce`);
